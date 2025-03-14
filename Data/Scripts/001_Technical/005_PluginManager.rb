@@ -540,7 +540,7 @@ module PluginManager
   # Get a list of all the plugin directories to inspect
   #-----------------------------------------------------------------------------
   def self.listAll
-    return [] if !$DEBUG || safeExists?("Game.rgssad")
+    # return [] if !$DEBUG || safeExists?("Game.rgssad")
     # get a list of all directories in the `Plugins/` folder
     dirs = []
     Dir.get("Plugins").each { |d| dirs.push(d) if Dir.safe?(d) }
@@ -714,4 +714,146 @@ module PluginManager
     echoln '' if !echoed_plugins.empty?
   end
   #-----------------------------------------------------------------------------
+  # Decompiling the plugins from .rxdata
+  #-----------------------------------------------------------------------------
+  def self.decompilePlugins
+    # get the order of plugins to interpret
+    # load plugins
+    scripts = load_data("Data/PluginScripts.rxdata")
+    echoed_plugins = []
+    plugins_meta = []
+    # print(File.expand_path("./Plugins_decompiled",Dir.pwd))
+    plugins_dir = File.expand_path("./Plugins",Dir.pwd)
+
+    # test = File.expand_path("./Plugins/test.txt",Dir.pwd)
+    # File.open(test, 'ab') do |f|
+    #   f.write("hello, world")
+    # end
+    for plugin in scripts
+      # get the required data
+      name, meta, script = plugin
+      c_name = self.cleanDirName(name)
+      plugin_dir = File.expand_path("./Plugins/#{c_name}",Dir.pwd)
+      if !Dir.exist?(plugin_dir) 
+        Dir.mkdir(plugin_dir)
+      end
+
+      meta_file = File.expand_path("./Plugins/#{c_name}/meta.txt",Dir.pwd)
+      File.open(meta_file, 'wb') do |f|
+        f.write(self.createMeta(meta))
+      end
+      # register plugin
+      self.register(meta)
+      plugins_meta.push(meta)
+      # go through each script and interpret
+      for scr in script
+        # turn code into plaintext
+        code = Zlib::Inflate.inflate(scr[1]).force_encoding(Encoding::UTF_8)
+        # get rid of twbs
+        code.gsub!("\t", "  ")
+        # construct filename
+        sname = scr[0].gsub("\\","/").split("/")[-1]
+        fname = "[#{c_name}] #{sname}"
+        
+        script_dir = File.expand_path("./Plugins/#{c_name}/#{sname}",Dir.pwd)
+        File.open(script_dir, 'wb') do |f|
+          f.write(code)
+        end
+        # print("#{fname}:\r\n")
+        # print("#{fname}:\r\n #{code}\r\n")
+        # print(Dir.pwd)
+      end
+    end
+  end
+
+  def self.getPlugins(order, plugins)
+    echo 'Compiling plugin scripts...'
+    scripts = []
+    # go through the entire order one by one
+    for o in order
+      # save name, metadata and scripts array
+      meta = plugins[o].clone
+      meta.delete(:scripts)
+      meta.delete(:dir)
+      dat = [o, meta, []]
+      # iterate through each file to deflate
+      for file in plugins[o][:scripts]
+        File.open("#{plugins[o][:dir]}/#{file}", 'rb') do |f|
+          dat[2].push([file, Zlib::Deflate.deflate(f.read)])
+        end
+      end
+      # push to the main scripts array
+      scripts.push(dat)
+    end
+    # save to main `PluginScripts.rxdata` file
+    # collect garbage
+    GC.start
+    echoln ' done.'
+    echoln ''
+    return scripts
+  end
+
+  def self.runPluginsDirect
+
+    # get the order of plugins to interpret
+    order, plugins = self.getPluginOrder
+    scripts = self.getPlugins(order, plugins)
+    # # compile if necessary
+    # self.compilePlugins(order, plugins) if self.needCompiling?(order, plugins)
+    # load plugins
+    echoed_plugins = []
+    for plugin in scripts
+      # get the required data
+      name, meta, script = plugin
+      # register plugin
+      self.register(meta)
+      # go through each script and interpret
+      for scr in script
+        # turn code into plaintext
+        code = Zlib::Inflate.inflate(scr[1]).force_encoding(Encoding::UTF_8)
+        # get rid of tabs
+        code.gsub!("\t", "  ")
+        # construct filename
+        sname = scr[0].gsub("\\","/").split("/")[-1]
+        fname = "[#{name}] #{sname}"
+        # try to run the code
+        begin
+          eval(code, TOPLEVEL_BINDING, fname)
+          echoln "Loaded plugin: #{name}" if !echoed_plugins.include?(name)
+          echoed_plugins.push(name)
+        rescue Exception   # format error message to display
+          self.pluginErrorMsg(name, sname)
+          Kernel.exit! true
+        end
+      end
+    end
+    echoln '' if !echoed_plugins.empty?
+  end
+
+  def self.cleanDirName(name)
+    illegal_chars = /[<>:"\/\\|?*\0]/
+    sanitized_name = name.gsub(illegal_chars, '')
+    return sanitized_name
+  end
+
+  def self.createMeta(meta)
+    requires = ""
+    conflicts = ""
+    if meta[:dependencies] != nil 
+      meta[:dependencies].each do |dep|
+        if dep.length == 2
+          requires += "Requires = #{dep[0]},#{dep[1]}\r\n"
+        else
+          requires += "Requires = #{dep}\r\n"
+        #   requires += "Requires = #{dep[2]},#{dep[0]},#{dep[1]}\r\n"
+        end
+      end
+    end
+    if meta[:incompatibilities] != nil
+      meta[:incompatibilities].each do |inc|
+        requires += "Conflicts = #{inc}\r\n"
+      end
+    end
+    return "Name = #{meta[:name]}\r\n\ Version = #{meta[:version]}\r\n\ Website = #{meta[:link]}\r\n\ #{requires} #{conflicts} Credits = #{meta[:credits]}\r\n"
+  end
 end

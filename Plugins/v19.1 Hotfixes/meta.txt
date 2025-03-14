@@ -1,0 +1,6 @@
+Name = v19.1 Hotfixes
+ Version = 1.0.7
+ Website = https://github.com/Maruno17/pokemon-essentials
+ Conflicts = v19 Updates
+Conflicts = v19 Hotfixes
+  Credits = ["Maruno"]
