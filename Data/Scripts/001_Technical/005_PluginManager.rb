@@ -764,6 +764,7 @@ module PluginManager
         # print(Dir.pwd)
       end
     end
+    print("Plugins decompiled successfully.\r\n")
   end
 
   def self.getPlugins(order, plugins)
@@ -839,6 +840,7 @@ module PluginManager
   def self.createMeta(meta)
     requires = ""
     conflicts = ""
+    credits = ""
     if meta[:dependencies] != nil 
       meta[:dependencies].each do |dep|
         if dep.length == 2
@@ -854,6 +856,19 @@ module PluginManager
         requires += "Conflicts = #{inc}\r\n"
       end
     end
-    return "Name = #{meta[:name]}\r\n\ Version = #{meta[:version]}\r\n\ Website = #{meta[:link]}\r\n\ #{requires} #{conflicts} Credits = #{meta[:credits]}\r\n"
+    if meta[:credits] != nil
+      credits = "Credits ="
+      credit_length = meta[:credits].length
+      credit_index = 0
+      meta[:credits].each do |credit|
+        credits += "#{credit}"
+        if credit_index < credit_length - 1
+          credits += ","
+        end
+        credit_index += 1
+      end
+    end
+
+    return "Name = #{meta[:name]}\r\nVersion = #{meta[:version]}\r\nWebsite = #{meta[:link]}\r\n#{requires}#{conflicts}#{credits}\r\n"
   end
 end

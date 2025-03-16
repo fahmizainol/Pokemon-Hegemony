@@ -1,4 +1,4 @@
 Name = Marin's Scripting Utilities
- Version = 1.7
- Website = https://reliccastle.com/resources/165/
-   Credits = ["Marin"]
+Version = 1.7
+Website = https://reliccastle.com/resources/165/
+Credits =Marin

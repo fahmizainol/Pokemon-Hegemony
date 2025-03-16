@@ -803,5 +803,6 @@ module Compiler
     write_trainers
     write_trainer_lists
     write_metadata
+    print("PBS files written.\r\n")
   end
 end

@@ -25,9 +25,13 @@ end
 def mainFunctionDebug
   begin
     MessageTypes.loadMessageFile("Data/messages.dat") if safeExists?("Data/messages.dat")
+    # order, plugins = PluginManager.getPluginOrder
+    # PluginManager.compilePlugins(order, plugins)
     # PluginManager.runPlugins
     # PluginManager.decompilePlugins
+    # Compiler.write_all
     PluginManager.runPluginsDirect
+    
     # Change the frame rate of the Game if EBDX is being used
     Graphics.frame_rate = 60 if defined?(EliteBattle)
     Compiler.main
