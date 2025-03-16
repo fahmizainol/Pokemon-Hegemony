@@ -50,7 +50,8 @@ module LvlCap
   end
 
   def self.cap
-    return LEVEL_CAP[$game_system.level_cap]
+    levelCap = $game_switches[LvlCap::Insane] ? INSANE_LEVEL_CAP[$game_system.level_cap] : LEVEL_CAP[$game_system.level_cap]
+    return levelCap
   end
 end
 
