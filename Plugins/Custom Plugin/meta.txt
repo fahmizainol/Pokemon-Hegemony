@@ -1,0 +1,4 @@
+Name         = Custom Plugin
+Version      = 1.0.0
+Credits = fzb
+
