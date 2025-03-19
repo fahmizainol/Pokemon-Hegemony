@@ -1,3 +1,4 @@
+# Fix for trainers not working
 module GameData
     module ClassMethods
 
@@ -13,5 +14,13 @@ module GameData
             const_set(:DATA, load_data("Data/#{self::DATA_FILENAME}"))
             end
         end
+    end
+end
+
+# Remove display brief message in battles
+class PokeBattle_Battle
+    alias pbDisplayBrief_ebdx pbDisplayBrief
+    def pbDisplayBrief(msg, &block)
+        @scene.pbDisplayMessage(msg, &block)
     end
 end
